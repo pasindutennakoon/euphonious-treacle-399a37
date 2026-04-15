@@ -403,7 +403,7 @@ tr.top-row td:first-child{border-left:3px solid #ffd700}
 //  CONFIG
 // ═══════════════════════════════════════════════════════
 const ADMIN_USER = "Pasindu";
-const ADMIN_PASS = "Pasiya@2003";
+// Admin password is validated server-side only — never stored in client code
 
 // ── TARGET: elephant's eye in the image ──────────────────
 // Image size: 1482 x 917 px
@@ -676,11 +676,23 @@ function showResult(dist, win){
 // ═══════════════════════════════════════════════════════
 //  ADMIN
 // ═══════════════════════════════════════════════════════
-function doAdminLogin(){
+let _adminPwd = '';
+async function doAdminLogin(){
   const u=document.getElementById('adminUser').value;
   const p=document.getElementById('adminPass').value;
-  if(u===ADMIN_USER&&p===ADMIN_PASS){ showScreen('adminScreen'); loadAdminData(); }
-  else setMsg('adminLoginMsg','Invalid credentials.','error');
+  if(u!==ADMIN_USER){ setMsg('adminLoginMsg','Invalid credentials.','error'); return; }
+  // Validate password server-side
+  try {
+    const res = await fetch(`/api/admin-data?pwd=${encodeURIComponent(p)}`);
+    if(!res.ok) throw new Error('Unauthorized');
+    _adminPwd = p;
+    showScreen('adminScreen');
+    const data = await res.json();
+    allPlayers = data.players || [];
+    filteredPlayers = allPlayers;
+    renderStats();
+    renderTable();
+  } catch(e){ setMsg('adminLoginMsg','Invalid credentials.','error'); }
 }
 function adminLogout(){ showScreen('registerScreen'); }
 
@@ -693,7 +705,7 @@ async function loadAdminData(){
     '<tr><td colspan="8" class="empty">Loading…</td></tr>';
   
   try {
-  const res = await fetch(`/api/admin-data?pwd=${encodeURIComponent(ADMIN_PASS)}`);
+  const res = await fetch(`/api/admin-data?pwd=${encodeURIComponent(_adminPwd)}`);
     if (!res.ok) throw new Error('Unauthorized or error');
     const data = await res.json();
     allPlayers = data.players || [];
