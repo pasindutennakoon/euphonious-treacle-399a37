@@ -243,6 +243,8 @@ tr.top-row td:first-child{border-left:3px solid #ffd700}
 .ib-refresh:hover{background:rgba(58,180,255,.22)}
 .ib-export{background:rgba(46,200,113,.12);color:#2ecc71;border:1px solid rgba(46,200,113,.25)}
 .ib-export:hover{background:rgba(46,200,113,.22)}
+.ib-reset{background:rgba(255,70,70,.12);color:#ff4646;border:1px solid rgba(255,70,70,.3)}
+.ib-reset:hover{background:rgba(255,70,70,.25)}
 .ib-logout{background:rgba(255,70,70,.1);color:#ff7070;border:1px solid rgba(255,70,70,.25)}
 .ib-logout:hover{background:rgba(255,70,70,.2)}
 .empty{padding:40px;text-align:center;color:rgba(255,255,255,.2)}
@@ -369,6 +371,7 @@ tr.top-row td:first-child{border-left:3px solid #ffd700}
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="ib ib-refresh" onclick="loadAdminData()">↻ Refresh</button>
         <button class="ib ib-export"  onclick="exportCSV()">⬇ Export CSV</button>
+        <button class="ib ib-reset"   onclick="resetAllPlayers()">🗑 Reset All</button>
         <button class="ib ib-logout"  onclick="adminLogout()">Logout</button>
       </div>
     </div>
@@ -695,7 +698,26 @@ async function doAdminLogin(){
   } catch(e){ setMsg('adminLoginMsg','Invalid credentials.','error'); }
 }
 function adminLogout(){ showScreen('registerScreen'); }
-
+async function resetAllPlayers(){
+  if(!confirm('⚠️ Are you sure you want to delete ALL player data? This cannot be undone.')) return;
+  if(!confirm('This will permanently remove every player record. Type OK to confirm.')) return;
+  try{
+    const res = await fetch('/api/reset-players',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pwd:_adminPwd})
+    });
+    if(!res.ok) throw new Error('Reset failed');
+    const data = await res.json();
+    // Clear localStorage fallback too
+    localStorage.removeItem(LS_KEY);
+    alert('✅ All player data has been reset. '+data.deleted+' record(s) deleted.');
+    loadAdminData();
+  }catch(e){
+    alert('❌ Failed to reset data: '+e.message);
+  }
+}
+  
 async function loadAdminData(){
   const badge = document.getElementById('modeBadge');
   badge.textContent = fbReady ? 'FIREBASE ONLINE' : 'LOCAL STORAGE';
