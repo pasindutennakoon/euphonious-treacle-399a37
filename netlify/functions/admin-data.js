@@ -12,13 +12,13 @@ export default async (req) => {
   const store = getStore("elephant-players");
   const { blobs } = await store.list();
 
-  const players = [];
-  for (const blob of blobs) {
-    const data = await store.get(blob.key, { type: "json" }).catch(() => null);
-    if (data) players.push(data);
-  }
+  // Fetch all players in parallel instead of one at a time
+  const players = (
+    await Promise.all(
+      blobs.map(blob => store.get(blob.key, { type: "json" }).catch(() => null))
+    )
+  ).filter(Boolean);
 
-  // Sort by distance ascending (best score first)
   players.sort((a, b) => a.distance - b.distance);
 
   return new Response(JSON.stringify({ players }), {
